@@ -1,0 +1,33 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import org.firstinspires.ftc.vision.VisionPortal;
+import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import java.util.List;
+
+@TeleOp(name = "AprilTag IDs USB", group = "Examples")
+public class AprilTagIDsUSB extends LinearOpMode {
+    VisionPortal visionPortal;
+    AprilTagProcessor aprilTag;
+
+    @Override
+    public void runOpMode() {
+        aprilTag = new AprilTagProcessor.Builder().build();
+        visionPortal = new VisionPortal.Builder()
+                .setCamera(hardwareMap.get(org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName.class, "Webcam 1"))
+                .addProcessor(aprilTag)
+                .build();
+        waitForStart();
+        while (opModeIsActive()) {
+            List<AprilTagDetection> detections = aprilTag.getDetections();
+            for (AprilTagDetection tag : detections) {
+                if (tag.id == 20) telemetry.addLine("Tag 20");
+                if (tag.id == 24) telemetry.addLine("Tag 24");
+            }
+            telemetry.update();
+        }
+        visionPortal.close();
+    }
+}
