@@ -1,80 +1,5 @@
 package org.firstinspires.ftc.teamcode;
 
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import org.firstinspires.ftc.vision.VisionPortal;
-import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
-import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
-import java.util.List;
-
-@TeleOp(name = "AprilTag IDs USB", group = "Examples")
-public class AprilTagIDsUSB extends LinearOpMode {
-    VisionPortal visionPortal;
-    AprilTagProcessor aprilTag;
-
-    @Override
-    public void runOpMode() {
-        aprilTag = new AprilTagProcessor.Builder().build();
-        visionPortal = new VisionPortal.Builder()
-                .setCamera(hardwareMap.get(org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName.class, "Webcam 1"))
-                .addProcessor(aprilTag)
-                .build();
-        waitForStart();
-        while (opModeIsActive()) {
-            List<AprilTagDetection> detections = aprilTag.getDetections();
-            for (AprilTagDetection tag : detections) {
-                if (tag.id == 20) telemetry.addLine("Tag 20");
-                if (tag.id == 24) telemetry.addLine("Tag 24");
-            }
-            telemetry.update();
-        }
-        visionPortal.close();
-    }
-}
-package org.firstinspires.ftc.teamcode;
-
-import com.qualcomm.hardware.bosch.BNO055IMU;
-import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
-
-@TeleOp(name = "IMU Test", group = "Examples")
-public class IMUTest extends LinearOpMode {
-
-    private BNO055IMU imu;
-    private Orientation angles;
-
-    @Override
-    public void runOpMode() {
-        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
-        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
-        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parameters.loggingEnabled = true;
-
-        imu = hardwareMap.get(BNO055IMU.class, "imu");
-        imu.initialize(parameters);
-
-        telemetry.addData("Status", "IMU initialized");
-        telemetry.update();
-
-        waitForStart();
-
-        while (opModeIsActive()) {
-            angles = imu.getAngularOrientation();
-
-            double heading = angles.firstAngle;
-            double roll = angles.secondAngle;
-            double pitch = angles.thirdAngle;
-
-            telemetry.addData("Heading (Z)", heading);
-            telemetry.addData("Roll (X)", roll);
-            telemetry.addData("Pitch (Y)", pitch);
-            telemetry.update();
-        }
-    }
-}
-package org.firstinspires.ftc.teamcode;
-
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -84,45 +9,58 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
-@TeleOp(name = "IMU Test", group = "Examples")
-public class IMUTest extends LinearOpMode {
+@TeleOp(name = "External IMU Debug", group = "Examples")
+public class ExternalIMUDebug extends LinearOpMode {
 
     private BNO055IMU imu;
     private Orientation angles;
 
     @Override
     public void runOpMode() {
-        // Set up IMU parameters
+        // Print all hardware names so we can confirm "imu" exists
+        for (String name : hardwareMap.getAllNames()) {
+            telemetry.addLine("Device: " + name);
+        }
+        telemetry.update();
+
+        // IMU parameters
         BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
         parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
         parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
         parameters.loggingEnabled = true;
 
-        // Get IMU from hardware map (make sure it’s named "imu" in the Robot Config)
+        // Try to grab "imu"
         imu = hardwareMap.get(BNO055IMU.class, "imu");
+
+        telemetry.addLine("Initializing IMU...");
+        telemetry.update();
+
         imu.initialize(parameters);
 
-        telemetry.addData("Status", "IMU initialized");
+        // Wait for calibration
+        while (!isStopRequested() && !imu.isGyroCalibrated()) {
+            sleep(50);
+            idle();
+            telemetry.addData("Status", "Calibrating: %s", imu.getCalibrationStatus());
+            telemetry.update();
+        }
+
+        telemetry.addData("Status", "IMU Ready");
         telemetry.update();
 
         waitForStart();
 
-        // Loop while op mode is running
         while (opModeIsActive()) {
-            // Get orientation (must specify reference, order, and unit)
             angles = imu.getAngularOrientation(
                     AxesReference.INTRINSIC,
                     AxesOrder.ZYX,
                     AngleUnit.DEGREES
             );
 
-            double heading = angles.firstAngle;  // Z-axis
-            double roll = angles.secondAngle;    // X-axis
-            double pitch = angles.thirdAngle;    // Y-axis
-
-            telemetry.addData("Heading (Z)", heading);
-            telemetry.addData("Roll (X)", roll);
-            telemetry.addData("Pitch (Y)", pitch);
+            telemetry.addData("Heading (Z)", angles.firstAngle);
+            telemetry.addData("Roll (X)", angles.secondAngle);
+            telemetry.addData("Pitch (Y)", angles.thirdAngle);
+            telemetry.addData("Calibration", imu.getCalibrationStatus().toString());
             telemetry.update();
         }
     }
