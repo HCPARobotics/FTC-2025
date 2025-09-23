@@ -31,3 +31,45 @@ public class AprilTagIDsUSB extends LinearOpMode {
         visionPortal.close();
     }
 }
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+
+@TeleOp(name = "IMU Test", group = "Examples")
+public class IMUTest extends LinearOpMode {
+
+    private BNO055IMU imu;
+    private Orientation angles;
+
+    @Override
+    public void runOpMode() {
+        BNO055IMU.Parameters parameters = new BNO055IMU.Parameters();
+        parameters.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        parameters.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parameters.loggingEnabled = true;
+
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parameters);
+
+        telemetry.addData("Status", "IMU initialized");
+        telemetry.update();
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            angles = imu.getAngularOrientation();
+
+            double heading = angles.firstAngle;
+            double roll = angles.secondAngle;
+            double pitch = angles.thirdAngle;
+
+            telemetry.addData("Heading (Z)", heading);
+            telemetry.addData("Roll (X)", roll);
+            telemetry.addData("Pitch (Y)", pitch);
+            telemetry.update();
+        }
+    }
+}
