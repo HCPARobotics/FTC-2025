@@ -65,3 +65,74 @@ public class ExternalIMUDebug extends LinearOpMode {
         }
     }
 }
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Gamepad;
+
+@com.qualcomm.robotcore.eventloop.opmode.TeleOp(name="MecanumDrive", group="Linear Opmode")
+public class MecanumDrive extends LinearOpMode {
+
+    // Declare hardware variables
+    DcMotor frontierMotor = null;
+    DcMotor backerMotor = null;
+    DcMotor leftMotor = null;
+    DcMotor rightMotor = null;
+
+    @Override
+    public void runOpMode() {
+        // Initialize the motors
+        frontierMotor = hardwareMap.get(DcMotor.class, "Frontier");
+        backerMotor = hardwareMap.get(DcMotor.class, "Backer");
+        leftMotor = hardwareMap.get(DcMotor.class, "Left");
+        rightMotor = hardwareMap.get(DcMotor.class, "Right");
+
+        // Set motors to run without encoders (for regular operation)
+        frontierMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        backerMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // Wait for the start of the game
+        waitForStart();
+
+        // Main driving loop
+        while (opModeIsActive()) {
+            // Get joystick values from the gamepad
+            double drive = -gamepad1.left_stick_y;  // Forward/backward
+            double strafe = gamepad1.left_stick_x;  // Left/right
+            double rotate = gamepad1.right_stick_x; // Rotation (turning)
+
+            // Calculate motor powers based on mecanum drive kinematics
+            double frontLeftPower = drive + strafe + rotate;
+            double frontRightPower = drive - strafe - rotate;
+            double backLeftPower = drive - strafe + rotate;
+            double backRightPower = drive + strafe - rotate;
+
+            // Normalize the motor powers to ensure they don't exceed 1 or -1
+            double maxPower = Math.max(Math.max(Math.abs(frontLeftPower), Math.abs(frontRightPower)),
+                                       Math.max(Math.abs(backLeftPower), Math.abs(backRightPower)));
+
+            if (maxPower > 1.0) {
+                frontLeftPower /= maxPower;
+                frontRightPower /= maxPower;
+                backLeftPower /= maxPower;
+                backRightPower /= maxPower;
+            }
+
+            // Set the power to each motor
+            frontierMotor.setPower(frontLeftPower);
+            rightMotor.setPower(frontRightPower);
+            leftMotor.setPower(backLeftPower);
+            backerMotor.setPower(backRightPower);
+
+            // Display telemetry (optional)
+            telemetry.addData("FL Power", frontLeftPower);
+            telemetry.addData("FR Power", frontRightPower);
+            telemetry.addData("BL Power", backLeftPower);
+            telemetry.addData("BR Power", backRightPower);
+            telemetry.update();
+        }
+    }
+}
