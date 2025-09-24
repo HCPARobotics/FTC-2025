@@ -136,3 +136,71 @@ public class MecanumDrive extends LinearOpMode {
         }
     }
 }
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+
+@TeleOp(name = "MecanumDriveWithEncoders", group = "TeleOp")
+public class MecanumDriveWithEncoders extends LinearOpMode {
+
+    private DcMotor frontLeft;
+    private DcMotor frontRight;
+    private DcMotor backLeft;
+    private DcMotor backRight;
+
+    @Override
+    public void runOpMode() {
+        // Map motors
+        frontLeft  = hardwareMap.get(DcMotor.class, "frontLeft");
+        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
+        backLeft   = hardwareMap.get(DcMotor.class, "backLeft");
+        backRight  = hardwareMap.get(DcMotor.class, "backRight");
+
+        // Reverse the right side so forward is correct
+        frontRight.setDirection(DcMotor.Direction.REVERSE);
+        backRight.setDirection(DcMotor.Direction.REVERSE);
+
+        // Reset encoders at start
+        frontLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        frontRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backLeft.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        backRight.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+        // Run using encoders
+        frontLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        frontRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backLeft.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        backRight.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            // Gamepad input
+            double y = -gamepad1.left_stick_y;
+            double x = gamepad1.left_stick_x * 1.1;
+            double rx = gamepad1.right_stick_x;
+
+            // Calculate power
+            double denominator = Math.max(Math.abs(y) + Math.abs(x) + Math.abs(rx), 1);
+            double flPower = (y + x + rx) / denominator;
+            double blPower = (y - x + rx) / denominator;
+            double frPower = (y - x - rx) / denominator;
+            double brPower = (y + x - rx) / denominator;
+
+            // Apply power
+            frontLeft.setPower(flPower);
+            backLeft.setPower(blPower);
+            frontRight.setPower(frPower);
+            backRight.setPower(brPower);
+
+            // Print motor power + encoder values
+            telemetry.addData("Front Left", "pwr: %.2f enc: %d", flPower, frontLeft.getCurrentPosition());
+            telemetry.addData("Front Right", "pwr: %.2f enc: %d", frPower, frontRight.getCurrentPosition());
+            telemetry.addData("Back Left", "pwr: %.2f enc: %d", blPower, backLeft.getCurrentPosition());
+            telemetry.addData("Back Right", "pwr: %.2f enc: %d", brPower, backRight.getCurrentPosition());
+            telemetry.update();
+        }
+    }
+}
