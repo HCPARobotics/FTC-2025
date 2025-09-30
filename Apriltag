@@ -2,32 +2,73 @@ package org.firstinspires.ftc.teamcode;
 
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import org.firstinspires.ftc.vision.VisionPortal;
+
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
+import org.firstinspires.ftc.vision.VisionPortal;
+
 import java.util.List;
 
-@TeleOp(name = "AprilTag IDs", group = "Examples")
-public class AprilTagIDs extends LinearOpMode {
-    VisionPortal visionPortal;
-    AprilTagProcessor aprilTag;
+@TeleOp(name="AprilTagPositionTest", group="Linear Opmode")
+public class AprilTagPositionTest extends LinearOpMode {
+
+    // Global variable for position (offset from tag)
+    public static double[] Position = {0, 0, 0}; // x, y, heading
+
+    private VisionPortal visionPortal;
+    private AprilTagProcessor aprilTag;
 
     @Override
     public void runOpMode() {
+
+        // Create AprilTag processor
         aprilTag = new AprilTagProcessor.Builder().build();
+
+        // Create vision portal using Webcam 1
         visionPortal = new VisionPortal.Builder()
-                .setCamera(VisionPortal.CameraDirection.BACK)
+                .setCamera(hardwareMap.get(WebcamName.class, "Webcam 1"))
                 .addProcessor(aprilTag)
                 .build();
+
+        telemetry.addLine("AprilTag initialized. Waiting for start...");
+        telemetry.update();
+
         waitForStart();
+
         while (opModeIsActive()) {
-            List<AprilTagDetection> detections = aprilTag.getDetections();
-            for (AprilTagDetection tag : detections) {
-                if (tag.id == 20) telemetry.addLine("Tag 20");
-                if (tag.id == 24) telemetry.addLine("Tag 24");
-            }
+            updateTagPosition();
+            telemetry.addData("Position X", Position[0]);
+            telemetry.addData("Position Y", Position[1]);
+            telemetry.addData("Heading", Position[2]);
             telemetry.update();
         }
-        visionPortal.close();
+    }
+
+    private void updateTagPosition() {
+        List<AprilTagDetection> detections = aprilTag.getDetections();
+
+        if (detections.isEmpty()) {
+            return;
+        }
+
+        AprilTagDetection tag20 = null;
+        AprilTagDetection fallback = null;
+
+        for (AprilTagDetection detection : detections) {
+            if (detection.id == 20) {
+                tag20 = detection;
+                break;
+            } else {
+                fallback = detection; // save a fallback if ID 20 not found
+            }
+        }
+
+        AprilTagDetection chosenTag = (tag20 != null) ? tag20 : fallback;
+
+        if (chosenTag != null) {
+            Position[0] = chosenTag.ftcPose.x;       // offset X (inches)
+            Position[1] = chosenTag.ftcPose.y;       // offset Y (inches)
+            Position[2] = chosenTag.ftcPose.yaw;     // heading (radians)
+        }
     }
 }
