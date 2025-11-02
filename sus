@@ -327,3 +327,91 @@ public class MecanumDriveWithIMU extends LinearOpMode {
         }
     }
 }
+
+
+
+
+
+
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+@TeleOp(name="Spin RPM Control", group="Concept")
+public class SpinRpmControl extends LinearOpMode {
+
+    private DcMotor spin = null;
+    private DcMotor agig = null;
+    private Servo tator = null;
+
+    // User-designated RPM
+    private double targetRPM = 1000;  // <-- You can change this or map it to a gamepad input
+
+    @Override
+    public void runOpMode() {
+        spin = hardwareMap.get(DcMotor.class, "spin");
+        agig = hardwareMap.get(DcMotor.class, "agig");
+        tator = hardwareMap.get(Servo.class, "tator");
+
+        spin.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        spin.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        agig.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        double kP = 0.0005; // Basic proportional gain for RPM control (tune this)
+        double power = 0;
+        double currentRPM = 0;
+
+        ElapsedTime timer = new ElapsedTime();
+        double lastPosition = 0;
+
+        telemetry.addLine("Initialized. Waiting for start...");
+        telemetry.update();
+
+        waitForStart();
+        timer.reset();
+
+        while (opModeIsActive()) {
+            // --- Measure RPM ---
+            double currentPosition = spin.getCurrentPosition();
+            double deltaPos = currentPosition - lastPosition;
+            double deltaTime = timer.seconds();
+            timer.reset();
+
+            // REV HD Hex motor: 28 ticks per revolution × gearbox (e.g. 20:1 → 560 ticks/rev)
+            // Adjust this constant to your motor’s ticks per revolution
+            double ticksPerRev = 560.0;
+            currentRPM = (deltaPos / ticksPerRev) / deltaTime * 60.0;
+
+            lastPosition = currentPosition;
+
+            // --- Basic proportional control to reach target RPM ---
+            double error = targetRPM - currentRPM;
+            power += kP * error;
+            power = Math.max(Math.min(power, 1.0), 0.0);
+
+            spin.setPower(power);
+
+            // --- When above target RPM, activate others ---
+            if (currentRPM >= targetRPM) {
+                agig.setPower(1.0);
+                tator.setPosition(1.0);  // Move servo to active position
+            } else {
+                agig.setPower(0.0);
+                tator.setPosition(0.0);  // Reset servo
+            }
+
+            // --- Telemetry ---
+            telemetry.addData("Target RPM", targetRPM);
+            telemetry.addData("Current RPM", "%.2f", currentRPM);
+            telemetry.addData("Spin Power", "%.2f", power);
+            telemetry.addData("agig", agig.getPower());
+            telemetry.addData("tator", tator.getPosition());
+            telemetry.update();
+        }
+    }
+}
