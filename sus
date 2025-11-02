@@ -415,3 +415,98 @@ public class SpinRpmControl extends LinearOpMode {
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.util.ElapsedTime;
+
+@TeleOp(name="Spin RPM Control (Always On Agig & Tator)", group="Concept")
+public class SpinRpmAlwaysOn extends LinearOpMode {
+
+    private DcMotor spin = null;
+    private DcMotor agig = null;
+    private CRServo tator = null;
+
+    // Desired spin motor RPM
+    private double targetRPM = 1000;
+
+    @Override
+    public void runOpMode() {
+        spin = hardwareMap.get(DcMotor.class, "spin");
+        agig = hardwareMap.get(DcMotor.class, "agig");
+        tator = hardwareMap.get(CRServo.class, "tator");
+
+        // Reverse all motor directions
+        spin.setDirection(DcMotor.Direction.REVERSE);
+        agig.setDirection(DcMotor.Direction.REVERSE);
+
+        // Setup encoder mode for spin
+        spin.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        spin.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+        agig.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+
+        // Proportional control parameters
+        double kP = 0.0005;  // Tune as needed
+        double power = 0;
+        double currentRPM = 0;
+
+        ElapsedTime timer = new ElapsedTime();
+        double lastPosition = 0;
+
+        telemetry.addLine("Initialized. Waiting for start...");
+        telemetry.update();
+
+        waitForStart();
+        timer.reset();
+
+        // --- Keep agig and tator running continuously ---
+        agig.setPower(1.0);  // Constant forward power
+        tator.setPower(1.0); // Continuous rotation servo spinning
+
+        while (opModeIsActive()) {
+            // --- Measure current RPM for spin motor ---
+            double currentPosition = spin.getCurrentPosition();
+            double deltaPos = currentPosition - lastPosition;
+            double deltaTime = timer.seconds();
+            timer.reset();
+
+            double ticksPerRev = 560.0; // Adjust for your motor type
+            currentRPM = (deltaPos / ticksPerRev) / deltaTime * 60.0;
+            lastPosition = currentPosition;
+
+            // --- Proportional control for spin motor speed ---
+            double error = targetRPM - currentRPM;
+            power += kP * error;
+            power = Math.max(Math.min(power, 1.0), 0.0);
+
+            spin.setPower(power);
+
+            // --- Telemetry ---
+            telemetry.addData("Target RPM", targetRPM);
+            telemetry.addData("Current RPM", "%.2f", currentRPM);
+            telemetry.addData("Spin Power", "%.2f", power);
+            telemetry.addData("agig Power", "%.2f", agig.getPower());
+            telemetry.addData("tator Power", "%.2f", 1.0);
+            telemetry.update();
+        }
+
+        // Stop motors after OpMode ends
+        spin.setPower(0);
+        agig.setPower(0);
+        tator.setPower(0);
+    }
+}
