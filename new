@@ -71,3 +71,20 @@ public class MecanumDrive extends LinearOpMode {
         }
     }
 }
+
+
+
+
+
+
+
+if (gamepad1.a) frontLeft.setPower(0.5);
+else if (gamepad1.b) frontRight.setPower(0.5);
+else if (gamepad1.x) backLeft.setPower(0.5);
+else if (gamepad1.y) backRight.setPower(0.5);
+else {
+    frontLeft.setPower(0);
+    frontRight.setPower(0);
+    backLeft.setPower(0);
+    backRight.setPower(0);
+}
