@@ -1,0 +1,73 @@
+package org.firstinspires.ftc.teamcode;
+
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+
+@TeleOp(name = "MecanumDrive", group = "Drive")
+public class MecanumDrive extends LinearOpMode {
+
+    // Motors
+    private DcMotor frontLeft, frontRight, backLeft, backRight;
+
+    @Override
+    public void runOpMode() {
+        // Initialize motors
+        frontLeft = hardwareMap.get(DcMotor.class, "frontLeft");
+        frontRight = hardwareMap.get(DcMotor.class, "frontRight");
+        backLeft = hardwareMap.get(DcMotor.class, "backLeft");
+        backRight = hardwareMap.get(DcMotor.class, "backRight");
+
+        // Reverse necessary motors
+        frontLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+        backLeft.setDirection(DcMotorSimple.Direction.REVERSE);
+
+        // Set all motors to brake when power = 0
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+
+        telemetry.addData("Status", "Initialized");
+        telemetry.update();
+
+        waitForStart();
+
+        while (opModeIsActive()) {
+            // Joystick controls
+            double y = -gamepad1.left_stick_y; // Forward/back
+            double x = gamepad1.left_stick_x * 1.1; // Strafing (1.1 to correct imperfect strafing)
+            double rx = gamepad1.right_stick_x; // Rotation
+
+            // Mecanum formulas
+            double frontLeftPower = y + x + rx;
+            double backLeftPower = y - x + rx;
+            double frontRightPower = y - x - rx;
+            double backRightPower = y + x - rx;
+
+            // Normalize powers so no value exceeds 1.0
+            double max = Math.max(1.0, Math.max(Math.abs(frontLeftPower),
+                           Math.max(Math.abs(backLeftPower),
+                           Math.max(Math.abs(frontRightPower),
+                                    Math.abs(backRightPower)))));
+            frontLeftPower /= max;
+            backLeftPower /= max;
+            frontRightPower /= max;
+            backRightPower /= max;
+
+            // Apply power to motors
+            frontLeft.setPower(frontLeftPower);
+            backLeft.setPower(backLeftPower);
+            frontRight.setPower(frontRightPower);
+            backRight.setPower(backRightPower);
+
+            // Telemetry feedback
+            telemetry.addData("Front Left", frontLeftPower);
+            telemetry.addData("Front Right", frontRightPower);
+            telemetry.addData("Back Left", backLeftPower);
+            telemetry.addData("Back Right", backRightPower);
+            telemetry.update();
+        }
+    }
+}
